@@ -1,0 +1,62 @@
+.docs code {
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  font-size: 0.875em;
+}
+
+.docs p code,
+.docs td code {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--surface-sunk);
+  box-shadow: inset 0 0 0 1px var(--line);
+  white-space: nowrap;
+}
+
+.basics {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  padding: clamp(20px, 3vw, 32px);
+}
+
+.basics p {
+  margin-top: 6px;
+}
+
+.basics p code {
+  background: var(--surface);
+}
+
+.signature {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.signature code {
+  font-size: 1rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.code {
+  margin: 0;
+  padding: 16px 18px;
+  border-radius: var(--radius-m);
+  background: #0e1511;
+  color: #e7efe9;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.code code {
+  font-size: inherit;
+}
+
+.response {
+  max-height: 420px;
+  overflow-y: auto;
+}

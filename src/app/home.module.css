@@ -1,0 +1,157 @@
+.hero {
+  position: relative;
+  padding-block: clamp(36px, 7vw, 88px) clamp(24px, 4vw, 48px);
+  overflow: hidden;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: -40% -10% auto auto;
+  width: min(820px, 90vw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--lime) 38%, transparent), transparent 70%);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.heroGrid {
+  position: relative;
+  display: grid;
+  gap: clamp(32px, 5vw, 64px);
+  align-items: center;
+}
+
+@media (min-width: 960px) {
+  .heroGrid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  }
+}
+
+.tiles {
+  display: grid;
+  gap: 14px;
+}
+
+.tile {
+  display: grid;
+  gap: 8px;
+  padding: 22px 24px;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-2);
+  transition:
+    transform 0.18s,
+    border-color 0.18s;
+}
+
+.tile:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-strong);
+}
+
+@media (min-width: 960px) {
+  .tile:nth-child(2) {
+    margin-left: -28px;
+    margin-right: 28px;
+  }
+}
+
+.tileLabel {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.tileSkeleton {
+  height: 124px;
+  border-radius: var(--radius-l);
+}
+
+.steps {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.steps > li {
+  display: grid;
+}
+
+.step {
+  display: grid !important;
+  gap: 12px;
+  align-content: start;
+  height: 100%;
+}
+
+.stepTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.stepIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.stepNumber {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  line-height: 1;
+  color: var(--line-strong);
+}
+
+.stepAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--brand);
+}
+
+.principles {
+  display: grid;
+  gap: clamp(24px, 4vw, 48px);
+  padding: clamp(24px, 4vw, 48px);
+  border-radius: var(--radius-xl);
+}
+
+@media (min-width: 900px) {
+  .principles {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    align-items: center;
+  }
+}
+
+.principleList {
+  display: grid;
+  gap: 20px;
+}
+
+.principleList li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.principleList svg {
+  color: var(--brand);
+  margin-top: 2px;
+}
+
+.principleList p {
+  margin-top: 4px;
+}
