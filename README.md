@@ -52,6 +52,35 @@ For an order of `$X` at one venue:
 
 Quotes come from swap aggregators (KyberSwap on EVM chains, Jupiter on Solana). Nothing is signed or sent.
 
+## Two ways to run it
+
+| | **Server app** (this repo, `npm run dev`) | **Widget** (`npm run build:widget`) |
+|---|---|---|
+| Where it runs | A Node server: pages plus the `/api/v1` API | Entirely in the visitor's browser, as static files |
+| Issuer catalogs | Read from each issuer (`PTO_CATALOG=direct`, default) or from Panther Terminal (`PTO_CATALOG=panther`) | Panther Terminal's API (some issuers' catalogs refuse browsers) |
+| Fair value | Exchange price, Robinhood's round-the-clock quote, or the venues' consensus | The venues' consensus |
+| Your keys | Server env vars, never sent to the browser | `window.PANTHER_ONBOARDING` or build-time `VITE_PTO_*`: public to every visitor |
+| Used by | Anyone self-hosting, the public API | [pantherterminal.com/tokenization/onboarding](https://pantherterminal.com/tokenization/onboarding) |
+
+Both run the same engine (`src/server/portfolio.ts`), switched by `src/server/connections.ts`.
+
+### Embedding the widget
+
+```bash
+PTO_WIDGET_BASE=/your/path/ npm run build:widget
+```
+
+Serve `dist-widget/` from that path and frame it. It posts its height so the frame can grow:
+
+```js
+addEventListener("message", (e) => {
+  if (e.origin === location.origin && e.data?.type === "panther-onboarding:height") frame.style.height = e.data.height + "px";
+});
+```
+
+Its Content-Security-Policy needs `connect-src` for the Panther API, the aggregators (KyberSwap, Jupiter, DexScreener)
+and the public RPC endpoints in `src/server/chains.ts`.
+
 ## Run it
 
 Needs Node 22 or newer.

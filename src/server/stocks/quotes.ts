@@ -112,7 +112,7 @@ async function kyber(chain: ChainId, token: string, decimals: number, amountUsd:
     `?tokenIn=${stable.address}&tokenOut=${token}&amountIn=${toRaw(amountUsd, stable.decimals)}`;
   const body = await fetchJson<KyberRoutes>(url, {
     timeoutMs: 4_500,
-    retries: 0,
+    retries: 1,
     headers: { "x-client-id": kyberClientId() },
   });
   const summary = body.data?.routeSummary;

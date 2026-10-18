@@ -41,9 +41,11 @@ export const FILL_RULES = {
   tickersPerClass: 2,
   /** Splits tried when one venue cannot fill the order: two pieces, then four. */
   splits: [2, 4],
+  /** How much better than proportional a split may turn out before it is skipped as hopeless. */
+  splitSlack: 2,
   defaultMaxCost: 0.01,
   /** Holdings quoted at the same time; the sources behind them are free and rate-limited. */
-  concurrency: 2,
+  concurrency: 3,
   /** Classes a tokenized Treasury or money market fund can stand in for. */
   fundClasses: ["tbills", "short_treasury"] as ClassId[],
   fundsShown: 8,
@@ -162,11 +164,13 @@ async function pricedVenues(
   const out: Priced[] = [];
   const reads = await Promise.all(
     tickers.map(async (ticker) => {
-      const [order, small] = await Promise.all([
-        lookupStock(ticker, amountUsd).catch(() => null),
-        lookupStock(ticker, FILL_RULES.referenceOrderUsd).catch(() => null),
-      ]);
-      return { ticker, order: order?.value ?? null, small: small?.value ?? null };
+      const order = (await lookupStock(ticker, amountUsd).catch(() => null))?.value ?? null;
+      // The $100 comparison is only needed for venues with no fair value to measure
+      // against, and only when no fair-valued venue already fills within the limit.
+      const fairFill = order?.venues.some((venue) => venue.premium !== null && venue.premium <= ctx.maxCost) ?? false;
+      const needsSmall = !fairFill && (order?.venues.some((venue) => venue.quote && venue.premium === null) ?? false);
+      const small = needsSmall ? (await lookupStock(ticker, FILL_RULES.referenceOrderUsd).catch(() => null))?.value ?? null : null;
+      return { ticker, order, small };
     }),
   );
   for (const { ticker, order, small } of reads) {
@@ -274,7 +278,12 @@ async function fillHolding(holding: TargetHolding, ctx: Context): Promise<Holdin
     }
   }
 
-  for (const parts of [minimumPieces, ...FILL_RULES.splits].filter((n) => n >= Math.max(2, minimumPieces))) {
+  // Price impact shrinks roughly in step with order size, so splitting k ways
+  // can at best cut the cost about k times. Splits that cannot reach the limit
+  // even then are not worth asking every venue about again.
+  const reachable = (parts: number) =>
+    base.bestSingleCost === null || base.bestSingleCost / parts <= maxCost * FILL_RULES.splitSlack;
+  for (const parts of [minimumPieces, ...FILL_RULES.splits].filter((n) => n >= Math.max(2, minimumPieces) && reachable(n))) {
     const size = holding.amountUsd / parts;
     const priced = await pricedVenues(tickers, size, ctx, seen);
     // One piece per venue: splitting into the same pool twice fills no better.

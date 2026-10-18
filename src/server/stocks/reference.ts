@@ -4,6 +4,7 @@
 // round-the-clock quote is used where it exists and is tight enough to trust.
 
 import { cached, SECOND, type Cached } from "../cache";
+import { IS_BROWSER } from "../connections";
 import { fetchJson } from "../http";
 
 export const ROBINHOOD_PRICES = "https://api.robinhood.com/rhj/prices";
@@ -113,6 +114,8 @@ function usableQuote(quote: RobinhoodQuote | undefined): { mid: number; asOf: st
 export async function loadReference(ticker: string): Promise<Cached<Reference | null>> {
   const key = ticker.toUpperCase();
   return cached(`reference:${key}`, { ttlMs: 20 * SECOND, staleMs: 10 * 60 * SECOND }, async () => {
+    // Neither source answers a browser (no CORS headers); there the venues' consensus is used instead.
+    if (IS_BROWSER) return null;
     const [exchange, quotes] = await Promise.all([nasdaq(key), loadRobinhoodQuotes().catch(() => null)]);
     const quote = usableQuote(quotes?.value.get(key));
 

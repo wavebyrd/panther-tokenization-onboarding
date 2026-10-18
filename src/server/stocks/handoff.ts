@@ -7,6 +7,7 @@
 // wallet or sends a transaction; the buyer confirms every step themselves.
 
 import { CHAINS, FEE_COIN, type ChainId } from "../chains";
+import { IS_BROWSER } from "../connections";
 import { loadOnramps } from "../onramps";
 
 export interface SwapLink {
@@ -73,6 +74,8 @@ function within<T>(promise: Promise<T>, ms: number): Promise<T | null> {
 
 /** On-ramps that can deliver `symbol` on `chain`, exchanges first. */
 async function directSources(chain: ChainId, symbol: string): Promise<FundingSource[] | null> {
+  // Exchange listing APIs do not answer browsers; the swap and bridge links still work there.
+  if (IS_BROWSER) return null;
   const read = await within(
     loadOnramps().catch(() => null),
     2_500,

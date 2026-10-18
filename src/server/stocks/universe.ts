@@ -4,7 +4,7 @@
 
 import { cached, HOUR, type Cached } from "../cache";
 import { CHAINS, chainFromBacked, chainFromEvmId, type ChainId } from "../chains";
-import { pantherApi } from "../connections";
+import { catalogMode, pantherApi } from "../connections";
 import { errorMessage, fetchJson } from "../http";
 import { COINBASE_DECIMALS, COINBASE_TOKENS, ISSUERS, type IssuerId } from "@/data/issuers";
 
@@ -202,27 +202,43 @@ interface PantherBoard {
     symbol: string;
     name: string;
     asset_id?: string | null;
+    chain?: string | null;
+    address?: string | null;
+    multiplier?: number | null;
     deployments?: Array<{ chain: string; address: string }>;
   }>;
 }
 
-function fromPanther(issuer: "dinari" | "bstocks") {
+/**
+ * One issuer's listings from Panther Terminal's venue board. Used for issuers
+ * with no catalog of their own that this project reads, and for every issuer
+ * in Panther mode (browsers cannot read some issuers' catalogs directly).
+ */
+function fromPanther(issuer: IssuerId) {
   return async (drafts: Map<string, Draft>) => {
     const body = await fetchJson<PantherBoard>(`${pantherApi()}/v1/venues/${issuer}/board`, { timeoutMs: 20_000 });
     if (!body.tokens?.length) throw new Error("catalog came back empty");
     for (const token of body.tokens) {
       const ticker = token.asset_id?.startsWith("sym:") ? token.asset_id.slice(4) : null;
       if (!ticker) continue;
-      for (const deployment of token.deployments ?? []) {
+      const deployments = token.deployments?.length
+        ? token.deployments
+        : token.chain && token.address
+          ? [{ chain: token.chain, address: token.address }]
+          : [];
+      const multiplier = typeof token.multiplier === "number" && token.multiplier > 0 ? token.multiplier : null;
+      for (const deployment of deployments) {
         const chain = deployment.chain as ChainId;
-        if (!(chain in CHAINS) || CHAINS[chain].kind !== "evm") continue;
-        add(drafts, ticker, issuer, token.name, {
+        if (!(chain in CHAINS) || CHAINS[chain].kind === "other") continue;
+        // xStocks trade on EVM chains in a wrapped form whose address the board does not carry.
+        if (issuer === "xstocks" && CHAINS[chain].kind === "evm") continue;
+        add(drafts, ticker, issuer, token.name.replace(/s*(xStock|(Ondo Tokenized[^)]*))s*$/i, "").trim(), {
           symbol: token.symbol,
           chain,
           address: deployment.address,
           decimals: null,
           form: "token",
-          catalogMultiplier: null,
+          catalogMultiplier: multiplier,
           priceFeed: null,
         });
       }
@@ -238,10 +254,11 @@ export async function loadUniverse(): Promise<Cached<Universe>> {
   return cached("stock-universe", { ttlMs: 6 * HOUR, staleMs: 48 * HOUR }, async () => {
     const drafts = new Map<string, Draft>();
     const missing: Universe["missing"] = [];
+    const panther = catalogMode() === "panther";
     const sources: Array<[IssuerId, (drafts: Map<string, Draft>) => Promise<void>]> = [
-      ["robinhood", robinhood],
-      ["ondo", ondo],
-      ["xstocks", xstocks],
+      ["robinhood", panther ? fromPanther("robinhood") : robinhood],
+      ["ondo", panther ? fromPanther("ondo") : ondo],
+      ["xstocks", panther ? fromPanther("xstocks") : xstocks],
       ["coinbase", coinbase],
       ["dinari", fromPanther("dinari")],
       ["bstocks", fromPanther("bstocks")],

@@ -68,7 +68,33 @@ const cost = (value: number) => (value > 0.5 ? ">50%" : `${value < 0 ? "−" : v
 const weightedCost = (pieces: FillPiece[]) =>
   pieces.reduce((total, entry) => total + entry.cost * entry.amountUsd, 0) / pieces.reduce((total, entry) => total + entry.amountUsd, 0);
 
-export function PortfolioBuilder() {
+/**
+ * Where live fills are worked out. "server" asks this project's own API (the
+ * Next app, with any keys you configured). "browser" runs the same engine in
+ * the visitor's browser against Panther Terminal's API and the aggregators,
+ * which is how the embedded widget runs with no server at all.
+ */
+export type Engine = "server" | "browser";
+
+const DEFAULT_ENGINE: Engine =
+  typeof process !== "undefined" && process.env?.NEXT_PUBLIC_PTO_ENGINE === "browser" ? "browser" : "server";
+
+async function runFills(engine: Engine, body: Record<string, unknown>): Promise<FilledPlan> {
+  if (engine === "browser") {
+    const { fillPortfolio } = await import("@/server/portfolio");
+    return fillPortfolio(body);
+  }
+  const response = await fetch("/api/v1/portfolio/plan", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const parsed = (await response.json()) as { data?: FilledPlan; error?: { message: string } };
+  if (!response.ok || !parsed.data) throw new Error(parsed.error?.message ?? `The server answered ${response.status}.`);
+  return parsed.data;
+}
+
+export function PortfolioBuilder({ engine = DEFAULT_ENGINE }: { engine?: Engine } = {}) {
   const [input, setInput] = useState<PortfolioInput>(PORTFOLIO_DEFAULTS);
   const [maxCost, setMaxCost] = useState(0.01);
   const [chains, setChains] = useState<ChainId[]>([]);
@@ -104,14 +130,8 @@ export function PortfolioBuilder() {
     setError(null);
     const key = fillKey;
     try {
-      const response = await fetch("/api/v1/portfolio/plan", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ...input, maxCost, chains, residence, investor }),
-      });
-      const body = (await response.json()) as { data?: FilledPlan; error?: { message: string } };
-      if (!response.ok || !body.data) throw new Error(body.error?.message ?? `The server answered ${response.status}.`);
-      setFills({ plan: body.data, key, at: new Date() });
+      const plan = await runFills(engine, { ...input, maxCost, chains, residence, investor });
+      setFills({ plan, key, at: new Date() });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Fills could not be checked.");
     } finally {
@@ -138,7 +158,7 @@ export function PortfolioBuilder() {
     <>
       <div className="command-bar" role="status">
         <span>
-          SIMULATION <em>{usd(deferred.capital, { cents: false })}</em> · {percent(deferred.equityShare, 0)} STOCKS →{" "}
+          {engine === "browser" ? "IN-BROWSER · " : ""}SIMULATION <em>{usd(deferred.capital, { cents: false })}</em> · {percent(deferred.equityShare, 0)} STOCKS →{" "}
           {percent(deferred.endEquityShare, 0)} IN {deferred.years}Y · {RISKS.find((risk) => risk.id === deferred.risk)?.label.toUpperCase()}
         </span>
         <span>

@@ -3,6 +3,8 @@
 // project, never a browser's. A host that refuses such requests is left
 // unread and the page says so, rather than being worked around.
 
+import { IS_BROWSER } from "./connections";
+
 export const UA = "panther-onboarding/0.1 (+https://github.com/wavebyrd/panther-tokenization-onboarding)";
 
 // Free endpoints that limit how fast one client may ask. Requests to these hosts
@@ -11,6 +13,7 @@ const SPACING_MS: Record<string, number> = {
   "lite-api.jup.ag": 1_500,
   "api.jup.ag": 120,
   "api.dexscreener.com": 250,
+  "aggregator-api.kyberswap.com": 200,
 };
 const nextSlot = new Map<string, number>();
 
@@ -55,7 +58,8 @@ export async function fetchJson<T = unknown>(url: string, options: FetchOptions 
       const response = await fetch(url, {
         method,
         headers: {
-          "User-Agent": UA,
+          // A browser sends its own User-Agent and does not let a page change it.
+          ...(IS_BROWSER ? {} : { "User-Agent": UA }),
           Accept: "application/json",
           ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
           ...headers,

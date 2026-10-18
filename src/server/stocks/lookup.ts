@@ -138,6 +138,8 @@ const sum = (values: Array<number | null>) => values.reduce<number>((total, valu
 
 /** Ondo's Solana token for this stock, as a listing, once its mint has proved it is Ondo's. */
 async function ondoSolanaListing(listings: Listing[]): Promise<Listing | null> {
+  // A catalog that already carries the Solana mint (Panther's does) needs no search.
+  if (listings.some((listing) => listing.issuer === "ondo" && listing.chain === "solana")) return null;
   const evm = listings.find((listing) => listing.issuer === "ondo");
   if (!evm) return null;
   const mint = await findOndoMint(evm.symbol).catch(() => null);
