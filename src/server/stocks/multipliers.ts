@@ -95,7 +95,7 @@ export async function findOndoMint(symbol: string): Promise<Cached<string | null
   return cached(`ondo-mint:${symbol}`, { ttlMs: 24 * HOUR, staleMs: 7 * 24 * HOUR }, async () => {
     const found = await fetchJson<JupiterToken[]>(
       `https://lite-api.jup.ag/tokens/v2/search?query=${encodeURIComponent(symbol)}`,
-      { timeoutMs: 4_000, retries: 0 },
+      { timeoutMs: 4_000, retries: 1 },
     );
     const match = found.find(
       (token) =>

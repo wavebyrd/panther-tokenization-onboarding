@@ -38,6 +38,8 @@ export const LOOKUP_RULES = {
   thinPremium: 0.1,
   /** Quotes move by a few hundredths of a percent from one second to the next; venues this close are tied. */
   tieMargin: 0.001,
+  /** Venues further than this from the median are left out of a consensus price. */
+  consensusBand: 0.02,
   poolsShown: 5,
   /** The longest any one source may hold a venue up before it is reported as not answering. */
   sourceDeadlineMs: 5_000,
@@ -324,6 +326,33 @@ async function buildVenue(
   };
 }
 
+/** What the quoted venues agree a share is worth, when no share price can be read. */
+function consensusPrice(venues: Venue[]): Reference | null {
+  const perShare = venues
+    .filter((venue) => venue.quote && venue.sharesPerToken)
+    .map((venue) => venue.quote!.pricePerToken / venue.sharesPerToken!)
+    .filter((value) => Number.isFinite(value) && value > 0)
+    .sort((a, b) => a - b);
+  if (perShare.length < 2) return null;
+  const median = (values: number[]) => {
+    const middle = Math.floor(values.length / 2);
+    return values.length % 2 ? values[middle] : (values[middle - 1] + values[middle]) / 2;
+  };
+  const first = median(perShare);
+  // A venue whose order moves the price a long way is not saying what a share is worth.
+  const agreeing = perShare.filter((value) => Math.abs(value / first - 1) <= LOOKUP_RULES.consensusBand);
+  if (agreeing.length < 2) return null;
+  return {
+    price: median(agreeing),
+    basis: "consensus",
+    label: `Median of ${agreeing.length} tokenized venues`,
+    marketOpen: false,
+    live: true,
+    asOf: new Date().toISOString(),
+    source: "Computed from the venues' own quotes",
+  };
+}
+
 const STATUS_ORDER: VenueStatus[] = ["best", "good", "fair", "costly", "unranked", "indicative", "thin", "no-market"];
 
 async function lookup(ticker: string, amountUsd: number): Promise<StockLookup | null> {
@@ -357,9 +386,22 @@ async function lookup(ticker: string, amountUsd: number): Promise<StockLookup | 
   }
 
   const handoff = handoffBuilder();
-  const built = await Promise.all(
+  let built = await Promise.all(
     listings.map((listing) => buildVenue(listing, reference, amountUsd, multipliers, solanaDecimals, handoff)),
   );
+  // With no share price to read (a closed market, a source that refuses), the
+  // venues themselves agree on one: the median price per share across every
+  // quoted venue whose multiplier is known, once outliers are set aside.
+  let compared = reference;
+  if (!compared) {
+    const consensus = consensusPrice(built);
+    if (consensus) {
+      compared = consensus;
+      built = await Promise.all(
+        listings.map((listing) => buildVenue(listing, consensus, amountUsd, multipliers, solanaDecimals, handoff)),
+      );
+    }
+  }
 
   const ranked = built
     .filter((venue) => venue.premium !== null && venue.status !== "thin")
@@ -390,7 +432,11 @@ async function lookup(ticker: string, amountUsd: number): Promise<StockLookup | 
   }
 
   const notes: string[] = [];
-  if (!reference) {
+  if (compared?.basis === "consensus") {
+    notes.push(
+      "No share price could be read right now, so venues are compared with the price they agree on: the median price per share across the quoted venues.",
+    );
+  } else if (!reference) {
     notes.push("The real share price could not be read, so venues are shown without a comparison to it.");
   } else if (!reference.marketOpen) {
     notes.push(
@@ -410,7 +456,7 @@ async function lookup(ticker: string, amountUsd: number): Promise<StockLookup | 
     kind: stock.kind,
     amountUsd,
     tookMs: Math.round(performance.now() - started),
-    reference,
+    reference: compared,
     venues: active,
     dormant: [...dormantByIssuer].map(([issuer, chains]) => ({
       issuer,

@@ -5,6 +5,8 @@
 //                             (for example PTO_RPC_ETHEREUM, PTO_RPC_BASE, PTO_RPC_ROBINHOOD)
 //   PTO_JUPITER_API_KEY       a Jupiter API key; quotes then go to api.jup.ag instead of the free lite endpoint
 //   PTO_KYBERSWAP_CLIENT_ID   the client id sent to KyberSwap's aggregator
+//   PTO_PANTHER_API           Panther Terminal's API, for the issuer catalogs and fund data it publishes
+//                             (default https://api.pantherterminal.com)
 //
 // Keys are read on the server only and never sent to the browser.
 
@@ -42,4 +44,9 @@ export function connectionSummary(): { ownRpcChains: string[]; jupiterKey: boole
     .filter((name) => name.startsWith("PTO_RPC_") && env(name))
     .map((name) => name.slice("PTO_RPC_".length).toLowerCase());
   return { ownRpcChains: chains, jupiterKey: Boolean(env("PTO_JUPITER_API_KEY")), kyberClientId: Boolean(env("PTO_KYBERSWAP_CLIENT_ID")) };
+}
+
+/** Panther Terminal's public API, which publishes the issuer catalogs and fund data this project reads. */
+export function pantherApi(): string {
+  return (env("PTO_PANTHER_API") ?? "https://api.pantherterminal.com").replace(/\/+$/, "");
 }

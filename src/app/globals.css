@@ -1,141 +1,72 @@
 /* ---------------------------------------------------------------------------
-   Trellis design system
-   Warm paper, white cards, one confident green. Type does the work; colour is
-   kept for meaning. Every colour is a token so light and dark swap in one place.
+   Panther skin
+   Matches the tokenization tabs on pantherterminal.com: near-black charcoal,
+   one violet accent, softened corners, sans text with monospace data.
+   Dark only, like the terminal. Every colour is a token.
    --------------------------------------------------------------------------- */
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 
   /* surfaces */
-  --page: #f6f5f0;
-  --surface: #ffffff;
-  --surface-sunk: #f1f0ea;
-  --surface-hover: #faf9f5;
+  --page: #090a0e;
+  --surface: #111217;
+  --surface-sunk: #0c0d11;
+  --surface-hover: #170d2a;
+  --head-fill: #14131a;
 
   /* ink */
-  --ink: #0e1511;
-  --ink-2: #47524b;
-  --ink-3: #78827b;
-  --line: #e4e2d9;
-  --line-strong: #cfccc0;
+  --ink: #e8e9f0;
+  --ink-2: #bfc0ce;
+  --ink-3: #898b9c;
+  --line: #24252f;
+  --line-strong: #343543;
 
-  /* brand */
-  --brand: #0a7a3f;
-  --brand-strong: #075c2f;
+  /* brand: violet for text and lines, deep purple for filled keys */
+  --brand: #b49aff;
+  --brand-strong: #c9b2ff;
   --brand-ink: #ffffff;
-  --brand-soft: #e2f3e7;
-  --brand-softer: #f0f9f2;
-  --lime: #c9f26b;
+  --brand-fill: #704ac5;
+  --brand-soft: #a879ff17;
+  --brand-softer: #9c76ff12;
+  --lime: #704ac5;
 
   /* meaning: always paired with an icon or a label, never colour alone */
-  --good: #0a7a3f;
-  --good-soft: #e2f3e7;
-  --caution: #8a5a00;
-  --caution-soft: #fdf1d3;
-  --caution-mark: #e0a100;
-  --critical: #b3261e;
-  --critical-soft: #fbe6e4;
-  --info: #1f5fae;
-  --info-soft: #e5eefa;
+  --good: #49d9a1;
+  --good-soft: #49d9a11c;
+  --caution: #f2c27a;
+  --caution-soft: #2a1f0f;
+  --caution-mark: #c98a2e;
+  --critical: #f37788;
+  --critical-soft: #f377881c;
+  --info: #b49aff;
+  --info-soft: #9c76ff12;
 
-  /* charts: validated as a set against --surface (see README) */
-  --series-1: #2a78d6;
-  --series-2: #eb6834;
-  --series-3: #1baf7a;
-  --series-muted: #a3a9a4;
-  --grid: #ebe9e1;
-  --axis: #cfccc0;
+  /* charts */
+  --series-1: #b49aff;
+  --series-2: #49d9a1;
+  --series-3: #f2c27a;
+  --series-muted: #5c5e6e;
+  --grid: #1b1c24;
+  --axis: #343543;
 
-  --shadow-1: 0 1px 2px rgba(14, 21, 17, 0.05), 0 1px 1px rgba(14, 21, 17, 0.03);
-  --shadow-2: 0 10px 30px -12px rgba(14, 21, 17, 0.18), 0 2px 6px rgba(14, 21, 17, 0.05);
-  --shadow-3: 0 24px 60px -20px rgba(14, 21, 17, 0.28);
-
-  --radius-s: 8px;
-  --radius-m: 14px;
-  --radius-l: 22px;
-  --radius-xl: 30px;
-
-  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: var(--font-display-face), "Iowan Old Style", Georgia, serif;
-
-  --measure: 68ch;
-  --shell: 1160px;
-  --gutter: clamp(16px, 4vw, 40px);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --page: #0b0f0c;
-    --surface: #151a17;
-    --surface-sunk: #0f1411;
-    --surface-hover: #1b221e;
-    --ink: #f2f4f1;
-    --ink-2: #b7c0b9;
-    --ink-3: #8a948c;
-    --line: #262e29;
-    --line-strong: #38423c;
-    --brand: #3ecf7a;
-    --brand-strong: #6ee39b;
-    --brand-ink: #06210f;
-    --brand-soft: #12301f;
-    --brand-softer: #0f2419;
-    --good: #3ecf7a;
-    --good-soft: #12301f;
-    --caution: #f2c14e;
-    --caution-soft: #33270a;
-    --caution-mark: #f2c14e;
-    --critical: #ff8a80;
-    --critical-soft: #3a1512;
-    --info: #8ab8f5;
-    --info-soft: #12243c;
-    --series-1: #3987e5;
-    --series-2: #d95926;
-    --series-3: #199e70;
-    --series-muted: #6c766f;
-    --grid: #202823;
-    --axis: #38423c;
-    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow-2: 0 10px 30px -12px rgba(0, 0, 0, 0.6);
-    --shadow-3: 0 24px 60px -20px rgba(0, 0, 0, 0.7);
-  }
-}
-
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --page: #0b0f0c;
-  --surface: #151a17;
-  --surface-sunk: #0f1411;
-  --surface-hover: #1b221e;
-  --ink: #f2f4f1;
-  --ink-2: #b7c0b9;
-  --ink-3: #8a948c;
-  --line: #262e29;
-  --line-strong: #38423c;
-  --brand: #3ecf7a;
-  --brand-strong: #6ee39b;
-  --brand-ink: #06210f;
-  --brand-soft: #12301f;
-  --brand-softer: #0f2419;
-  --good: #3ecf7a;
-  --good-soft: #12301f;
-  --caution: #f2c14e;
-  --caution-soft: #33270a;
-  --caution-mark: #f2c14e;
-  --critical: #ff8a80;
-  --critical-soft: #3a1512;
-  --info: #8ab8f5;
-  --info-soft: #12243c;
-  --series-1: #3987e5;
-  --series-2: #d95926;
-  --series-3: #199e70;
-  --series-muted: #6c766f;
-  --grid: #202823;
-  --axis: #38423c;
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-1: none;
   --shadow-2: 0 10px 30px -12px rgba(0, 0, 0, 0.6);
   --shadow-3: 0 24px 60px -20px rgba(0, 0, 0, 0.7);
+
+  --radius-s: 5px;
+  --radius-m: 7px;
+  --radius-l: 9px;
+  --radius-xl: 12px;
+
+  --font-sans: var(--font-inter), Inter, "Segoe UI", Arial, sans-serif;
+  --font-display: var(--font-sans);
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+  --measure: 72ch;
+  --shell: 1320px;
+  --gutter: 26px;
+  --sidebar: 214px;
 }
 
 /* ---- base ---------------------------------------------------------------- */

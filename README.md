@@ -28,8 +28,16 @@ Asset classes and the funds behind them:
 | US small companies (IWM) | US bond market (AGG, BND) |
 | International developed (EFA) | Inflation-protected Treasuries (TIP), high-yield bonds (HYG), gold (GLD, IAU) |
 
-Tokenized versions come from Robinhood Stock Tokens, Ondo Global Markets, xStocks and Coinbase, read live from each
-issuer's own catalog.
+Tokenized versions come from Robinhood Stock Tokens, Ondo Global Markets, xStocks and Coinbase (read live from each
+issuer's own catalog) and Dinari and bStocks (read from [Panther Terminal](https://pantherterminal.com/tokenization)'s
+catalog). For the steadiest classes it also lists tokenized Treasury and money market funds (BUIDL, USYC, BENJI, USTB and
+others) with their yields, size on chain and who may buy them, from Panther Terminal's fund data.
+
+### Your situation
+
+Tell it where you live and what kind of investor you are. Venues whose issuer does not offer its tokens in the United
+States are left out for US residents, and each fund's own eligibility rule (linked to its source) is checked against your
+answers. Unclear rules say "check terms" rather than guessing.
 
 ### How a fill is measured
 
@@ -37,6 +45,8 @@ For an order of `$X` at one venue:
 
 - **Against fair value**, where possible: the all-in price (aggregator quote plus network fee) over the real fund price
   times the shares each token stands for.
+- **Against what the venues agree on**, when no share price can be read (a closed market): the median price per share
+  across the quoted venues.
 - **Against a small order**, otherwise: the same venue's price for `$X` over its price for `$100`. This is the price
   impact of size alone, which is the question "can this pool fill me?" asks.
 
@@ -74,6 +84,7 @@ add what you have:
 | `PTO_RPC_<CHAIN>` | Your RPC URLs for a chain (e.g. `PTO_RPC_ETHEREUM`), comma-separated, tried before the public ones |
 | `PTO_JUPITER_API_KEY` | Solana quotes go to Jupiter's keyed API instead of the free lite endpoint |
 | `PTO_KYBERSWAP_CLIENT_ID` | The client id sent to KyberSwap |
+| `PTO_PANTHER_API` | Panther Terminal's API, for issuer catalogs and fund data (default `https://api.pantherterminal.com`) |
 
 Keys are read on the server only and are never sent to the browser. You are responsible for following the terms of the
 providers you connect.
@@ -108,6 +119,11 @@ src/
   data/            hand-written issuer, coin and lender facts, each with a review date
   app/             pages and API routes; /portfolio is the simulator
 ```
+
+## Being a good citizen
+
+Every request carries an honest User-Agent naming this project; it never poses as a browser. Free endpoints with rate
+limits are paced. A source that refuses honest requests is left unread and the page says so.
 
 ## Limits
 

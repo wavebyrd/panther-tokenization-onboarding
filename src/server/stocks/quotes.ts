@@ -165,7 +165,7 @@ async function jupiter(token: string, decimals: number, amountUsd: number): Prom
   const url =
     `${jup.base}/quote?inputMint=${stable.address}&outputMint=${token}` +
     `&amount=${toRaw(amountUsd, stable.decimals)}&slippageBps=50`;
-  const body = await fetchJson<JupiterQuote>(url, { timeoutMs: 4_500, retries: 0, headers: jup.headers }).catch((error: unknown) => {
+  const body = await fetchJson<JupiterQuote>(url, { timeoutMs: 4_500, retries: 1, headers: jup.headers }).catch((error: unknown) => {
     // Jupiter answers 400 when nothing can fill the order.
     if (error instanceof HttpError && error.status === 400) throw new Error("no route found");
     throw error;

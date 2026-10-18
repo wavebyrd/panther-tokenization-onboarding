@@ -1,9 +1,28 @@
-// Outbound HTTP for every upstream source. Public data APIs only: no keys, no
-// user data in any request. Some hosts (Nasdaq, Robinhood's explorer) refuse
-// requests without a browser-like User-Agent.
+// Outbound HTTP for every upstream source. Public data APIs only: no user data
+// in any request. Requests say who is asking: an honest User-Agent naming this
+// project, never a browser's. A host that refuses such requests is left
+// unread and the page says so, rather than being worked around.
 
-const UA =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
+export const UA = "panther-onboarding/0.1 (+https://github.com/wavebyrd/panther-tokenization-onboarding)";
+
+// Free endpoints that limit how fast one client may ask. Requests to these hosts
+// are spaced out, so a burst of lookups queues politely instead of being refused.
+const SPACING_MS: Record<string, number> = {
+  "lite-api.jup.ag": 1_500,
+  "api.jup.ag": 120,
+  "api.dexscreener.com": 250,
+};
+const nextSlot = new Map<string, number>();
+
+async function waitForSlot(url: string): Promise<void> {
+  const host = new URL(url).host;
+  const spacing = SPACING_MS[host];
+  if (!spacing) return;
+  const now = Date.now();
+  const slot = Math.max(now, nextSlot.get(host) ?? 0);
+  nextSlot.set(host, slot + spacing);
+  if (slot > now) await new Promise((resolve) => setTimeout(resolve, slot - now));
+}
 
 export class HttpError extends Error {
   constructor(
@@ -32,6 +51,7 @@ export async function fetchJson<T = unknown>(url: string, options: FetchOptions 
   let lastError: unknown = null;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
+      await waitForSlot(url);
       const response = await fetch(url, {
         method,
         headers: {
@@ -45,7 +65,7 @@ export async function fetchJson<T = unknown>(url: string, options: FetchOptions 
         signal: AbortSignal.timeout(timeoutMs),
       });
       if (response.status === 429 && attempt < retries) {
-        await sleep(800 * (attempt + 1));
+        await sleep(1_500 * (attempt + 1));
         continue;
       }
       if (!response.ok) throw new HttpError(url, response.status);

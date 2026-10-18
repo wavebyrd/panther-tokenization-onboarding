@@ -6,7 +6,7 @@
 // change. Where it has not been confirmed from the issuer's own terms it is
 // marked "unconfirmed" rather than guessed.
 
-export type IssuerId = "robinhood" | "coinbase" | "xstocks" | "ondo";
+export type IssuerId = "robinhood" | "coinbase" | "xstocks" | "ondo" | "dinari" | "bstocks";
 
 export interface IssuerProfile {
   id: IssuerId;
@@ -111,6 +111,40 @@ export const ISSUERS: Record<IssuerId, IssuerProfile> = {
     },
     url: "https://ondo.finance/global-markets",
     catalogUrl: "https://github.com/ondoprotocol/ondo-global-markets-token-list",
+  },
+  dinari: {
+    id: "dinari",
+    name: "Dinari dShares",
+    company: "Dinari",
+    whatYouOwn: "A token that tracks a share or fund, issued by Dinari. Check Dinari's own terms for exactly what it represents.",
+    dividends: "Not confirmed from Dinari's published terms.",
+    eligibility: {
+      status: "unconfirmed",
+      summary: "Availability differs by country. Check Dinari's own terms for where you live before buying.",
+    },
+    home: "Arbitrum and Base",
+    direct: {
+      summary: "Bought through Dinari's own app or partner apps by accounts it accepts.",
+      url: "https://dinari.com",
+      confirmed: false,
+    },
+    url: "https://dinari.com",
+    catalogUrl: "https://api.pantherterminal.com/v1/venues/dinari/board",
+  },
+  bstocks: {
+    id: "bstocks",
+    name: "bStocks",
+    company: "bStocks",
+    whatYouOwn: "A token on BNB Chain that tracks a share or fund. Check the issuer's own terms for exactly what it represents.",
+    dividends: "Not confirmed from the issuer's published terms.",
+    eligibility: {
+      status: "unconfirmed",
+      summary: "Not confirmed from the issuer's own terms. Check where it is offered before buying.",
+    },
+    home: "BNB Chain",
+    direct: null,
+    url: "https://www.bstocks.finance",
+    catalogUrl: "https://api.pantherterminal.com/v1/venues/bstocks/board",
   },
 };
 

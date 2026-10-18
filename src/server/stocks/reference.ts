@@ -16,7 +16,7 @@ const QUOTE_FRESH_MS = 10 * 60 * 1000;
 
 export interface Reference {
   price: number;
-  basis: "exchange" | "round-the-clock" | "last-close";
+  basis: "exchange" | "round-the-clock" | "last-close" | "consensus";
   label: string;
   /** Whether the stock's home exchange is in its regular session. */
   marketOpen: boolean;
