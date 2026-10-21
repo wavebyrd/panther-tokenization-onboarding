@@ -11,10 +11,6 @@ body {
   padding: 0 26px 24px;
 }
 
-.pto-widget .command-bar {
-  margin-top: 0;
-}
-
 @media (max-width: 900px) {
   .pto-widget {
     padding: 0 16px 20px;

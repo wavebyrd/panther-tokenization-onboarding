@@ -153,51 +153,35 @@ export function PortfolioBuilder({ engine = DEFAULT_ENGINE }: { engine?: Engine 
   const dollars = projection.inTodaysDollars ? "today's dollars" : "nominal dollars";
   const shown = live ?? fills?.plan ?? null;
   const fundRows = dedupeFunds(shown?.holdings ?? []);
+  const showFills = Boolean(shown) || checking;
+  const fillSummary = checking
+    ? "reading live quotes…"
+    : live
+      ? `${percent(live.filledUsd / deferred.capital, 0)} fills on chain within ${percent(live.maxCost, live.maxCost < 0.01 ? 2 : 0)}` +
+        (live.averageCost != null ? ` · average ${cost(live.averageCost)}` : "") +
+        ` · read ${fills!.at.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`
+      : stale
+        ? "inputs changed · check again"
+        : "see where each piece fills on chain";
 
   return (
     <>
-      <div className="command-bar" role="status">
-        <span>
-          {engine === "browser" ? "IN-BROWSER · " : ""}SIMULATION <em>{usd(deferred.capital, { cents: false })}</em> · {percent(deferred.equityShare, 0)} STOCKS →{" "}
-          {percent(deferred.endEquityShare, 0)} IN {deferred.years}Y · {RISKS.find((risk) => risk.id === deferred.risk)?.label.toUpperCase()}
-        </span>
-        <span>
-          {checking
-            ? "READING LIVE QUOTES…"
-            : live
-              ? `QUOTES READ ${fills!.at.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} · ${(live.tookMs / 1000).toFixed(1)}S`
-              : stale
-                ? "INPUTS CHANGED · CHECK AGAIN"
-                : "LIVE QUOTES NOT CHECKED"}
-        </span>
-      </div>
-
       <ul className="tiles" aria-label="Summary">
-        <Tile label="Capital" value={usd(deferred.capital, { cents: false })} note={`+ ${usd(deferred.monthly, { cents: false })} a month`} />
-        <Tile label="Expected return" value={percent(plan.expectedReturn, 1)} note="a year, on today's mix" signal />
-        <Tile label="Typical swing" value={percent(plan.volatility, 1)} note="yearly standard deviation" />
         <Tile
-          label={`Typical in ${deferred.years}y`}
+          label={`Typical in ${deferred.years} years`}
           value={usdCompact(projection.glide.p50)}
           note={`poor market ${usdCompact(projection.glide.p10)} · ${dollars}`}
+          signal
         />
-        <Tile
-          label="Fills on chain now"
-          value={live ? percent(live.filledUsd / deferred.capital, 0) : "—"}
-          note={live ? `${usd(live.filledUsd, { cents: false })} within ${percent(live.maxCost, live.maxCost < 0.01 ? 2 : 0)}` : "run the live check"}
-        />
-        <Tile
-          label="Average all-in cost"
-          value={live?.averageCost != null ? cost(live.averageCost) : "—"}
-          note="price impact, spread and fee"
-        />
+        <Tile label="Expected return" value={percent(plan.expectedReturn, 1)} note="a year, on today's mix" />
+        <Tile label="Typical swing" value={percent(plan.volatility, 1)} note="yearly standard deviation" />
       </ul>
 
       <div className={styles.layout}>
         <form className={`card panel ${styles.controls}`} onSubmit={(event) => event.preventDefault()} aria-label="Your portfolio">
           <div className="panel-head">
-            <h2>Parameters</h2>
-            <span>runs as you type</span>
+            <h2>Your plan</h2>
+            <span>updates as you type</span>
           </div>
           <div className={styles.controlBody}>
             <div className={styles.pair}>
@@ -230,58 +214,62 @@ export function PortfolioBuilder({ engine = DEFAULT_ENGINE }: { engine?: Engine 
               format={(value) => `${value} / ${100 - value}`}
               onChange={(value) => set("endEquityShare", value / 100)}
             />
-            <Segmented label="Glide shift" options={SHAPES} value={input.shape} onChange={(value) => set("shape", value)} />
-            <Segmented
-              label="Inside each side"
-              options={RISKS}
-              value={input.risk}
-              onChange={(value) => set("risk", value)}
-              hint={RISKS.find((risk) => risk.id === input.risk)?.explainer}
-            />
-
-            <p className={styles.groupLabel}>Your situation</p>
             <Segmented label="Where you live" options={RESIDENCES} value={residence} onChange={setResidence} />
-            <Segmented
-              label="Investor type"
-              options={INVESTORS}
-              value={investor}
-              onChange={setInvestor}
-              hint="Used only to filter what each issuer's own terms say you may buy."
-            />
 
-            <p className={styles.groupLabel}>Asset classes</p>
-            <div className={styles.classes}>
-              {(["equity", "fixed"] as const).map((sleeve) => (
-                <fieldset key={sleeve}>
-                  <legend>{sleeve === "equity" ? "Stocks" : "Bonds & steady"}</legend>
-                  {ASSET_CLASSES.filter((assetClass) => assetClass.sleeve === sleeve).map((assetClass) => (
-                    <label key={assetClass.id} title={assetClass.plain}>
-                      <input type="checkbox" checked={input.classes.includes(assetClass.id)} onChange={() => toggleClass(assetClass.id)} />
-                      <span>{assetClass.name}</span>
-                      <span className={styles.tickers}>{assetClass.tickers[0]}</span>
-                    </label>
+            <details className="disclosure">
+              <summary>More options</summary>
+              <div className={styles.more}>
+                <Segmented label="Glide shift" options={SHAPES} value={input.shape} onChange={(value) => set("shape", value)} />
+                <Segmented
+                  label="Inside each side"
+                  options={RISKS}
+                  value={input.risk}
+                  onChange={(value) => set("risk", value)}
+                  hint={RISKS.find((risk) => risk.id === input.risk)?.explainer}
+                />
+                <Segmented
+                  label="Investor type"
+                  options={INVESTORS}
+                  value={investor}
+                  onChange={setInvestor}
+                  hint="Used only to filter what each issuer's own terms say you may buy."
+                />
+
+                <p className={styles.groupLabel}>Asset classes</p>
+                <div className={styles.classes}>
+                  {(["equity", "fixed"] as const).map((sleeve) => (
+                    <fieldset key={sleeve}>
+                      <legend>{sleeve === "equity" ? "Stocks" : "Bonds & steady"}</legend>
+                      {ASSET_CLASSES.filter((assetClass) => assetClass.sleeve === sleeve).map((assetClass) => (
+                        <label key={assetClass.id} title={assetClass.plain}>
+                          <input type="checkbox" checked={input.classes.includes(assetClass.id)} onChange={() => toggleClass(assetClass.id)} />
+                          <span>{assetClass.name}</span>
+                          <span className={styles.tickers}>{assetClass.tickers[0]}</span>
+                        </label>
+                      ))}
+                    </fieldset>
                   ))}
-                </fieldset>
-              ))}
-            </div>
+                </div>
 
-            <p className={styles.groupLabel}>Execution</p>
-            <Segmented
-              label="Most over fair value"
-              options={LIMITS.map((limit) => ({ id: String(limit), label: percent(limit, limit < 0.01 ? 2 : 0) }))}
-              value={String(maxCost)}
-              onChange={(value) => setMaxCost(Number(value))}
-            />
-            <div className="field">
-              <span className="label">Chains (none = any)</span>
-              <div className={styles.chips}>
-                {CHAIN_CHOICES.map((chain) => (
-                  <button key={chain.id} type="button" className="chip" aria-pressed={chains.includes(chain.id)} onClick={() => toggleChain(chain.id)}>
-                    {chain.label}
-                  </button>
-                ))}
+                <p className={styles.groupLabel}>Buying on chain</p>
+                <Segmented
+                  label="Most over fair value"
+                  options={LIMITS.map((limit) => ({ id: String(limit), label: percent(limit, limit < 0.01 ? 2 : 0) }))}
+                  value={String(maxCost)}
+                  onChange={(value) => setMaxCost(Number(value))}
+                />
+                <div className="field">
+                  <span className="label">Chains (none = any)</span>
+                  <div className={styles.chips}>
+                    {CHAIN_CHOICES.map((chain) => (
+                      <button key={chain.id} type="button" className="chip" aria-pressed={chains.includes(chain.id)} onClick={() => toggleChain(chain.id)}>
+                        {chain.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+            </details>
 
             <details className="disclosure">
               <summary>Assumptions</summary>
@@ -318,7 +306,7 @@ export function PortfolioBuilder({ engine = DEFAULT_ENGINE }: { engine?: Engine 
           <section className="card panel" aria-label="Target allocation">
             <div className="panel-head">
               <h2>Target allocation</h2>
-              <span>mean-variance · {plan.holdings.length} classes</span>
+              <span>{fillSummary}</span>
               <button type="button" className="button primary small" onClick={checkFills} disabled={checking}>
                 {checking ? "Reading quotes…" : live ? "Re-check fills" : "Check live fills"}
               </button>
@@ -335,9 +323,13 @@ export function PortfolioBuilder({ engine = DEFAULT_ENGINE }: { engine?: Engine 
                     <th>Class</th>
                     <th>Weight</th>
                     <th className="end">Amount</th>
-                    <th>Best fill now</th>
-                    <th className="end">All-in</th>
-                    <th>Status</th>
+                    {showFills ? (
+                      <>
+                        <th>Best fill now</th>
+                        <th className="end">All-in</th>
+                        <th>Status</th>
+                      </>
+                    ) : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -360,11 +352,15 @@ export function PortfolioBuilder({ engine = DEFAULT_ENGINE }: { engine?: Engine 
                           </span>
                         </td>
                         <td className="end">{usd(holding.amountUsd, { cents: false })}</td>
-                        <td>
-                          <BestFill fill={fill} checking={checking} />
-                        </td>
-                        <td className="end">{fill?.pieces.length ? <Cost value={weightedCost(fill.pieces)} /> : "—"}</td>
-                        <td>{fill ? <Badge status={fill.status} /> : <span className={styles.sub}>{checking ? "…" : "—"}</span>}</td>
+                        {showFills ? (
+                          <>
+                            <td>
+                              <BestFill fill={fill} checking={checking} />
+                            </td>
+                            <td className="end">{fill?.pieces.length ? <Cost value={weightedCost(fill.pieces)} /> : "—"}</td>
+                            <td>{fill ? <Badge status={fill.status} /> : <span className={styles.sub}>{checking ? "…" : "—"}</span>}</td>
+                          </>
+                        ) : null}
                       </tr>
                     );
                   })}
@@ -446,26 +442,6 @@ export function PortfolioBuilder({ engine = DEFAULT_ENGINE }: { engine?: Engine 
                     ]}
                   />
                 </ChartFrame>
-                <div className={styles.sleeves}>
-                  {[plan.equity, plan.fixed].map((mix) => (
-                    <div key={mix.sleeve}>
-                      <p className={styles.groupLabel}>{mix.sleeve === "equity" ? "Stock side" : "Bond side"}</p>
-                      <ul>
-                        {mix.classes
-                          .filter((entry) => entry.weight > 0)
-                          .map((entry) => (
-                            <li key={entry.id}>
-                              <span>{entry.name}</span>
-                              <span className="num">{percent(entry.weight, 0)}</span>
-                            </li>
-                          ))}
-                      </ul>
-                      <p className={styles.sub}>
-                        {percent(mix.expectedReturn, 1)} EXP · {percent(mix.volatility, 1)} SWING
-                      </p>
-                    </div>
-                  ))}
-                </div>
               </div>
             </section>
           </div>
@@ -556,14 +532,14 @@ function Execution({ plan }: { plan: FilledPlan }) {
       : [{ holding, entry: null as FillPiece | null, first: true }],
   );
   return (
-    <section className="card panel" aria-label="Execution">
-      <div className="panel-head">
-        <h2>Execution · order by order</h2>
+    <details className={`card panel ${styles.fold}`} aria-label="Execution">
+      <summary className="panel-head">
+        <h2>Order by order</h2>
         <span>
           {plan.residence === "us" ? "US resident" : "outside the US"} · limit {percent(plan.maxCost, plan.maxCost < 0.01 ? 2 : 0)} ·{" "}
           {plan.chains.length ? plan.chains.join(", ") : "any chain"}
         </span>
-      </div>
+      </summary>
       <div className="table-wrap">
         <table className="table">
           <thead>
@@ -634,7 +610,7 @@ function Execution({ plan }: { plan: FilledPlan }) {
         where that can&apos;t be read, against the same venue&apos;s price for a $100 order. Pool depth is the dollar liquidity in the
         token&apos;s pools on that chain.
       </p>
-    </section>
+    </details>
   );
 }
 
@@ -646,11 +622,11 @@ function dedupeFunds(holdings: HoldingFill[]): FundOption[] {
 
 function Funds({ funds, asOf, residence }: { funds: FundOption[]; asOf: string | null; residence: Residence }) {
   return (
-    <section className="card panel" aria-label="Tokenized funds for the bond side">
-      <div className="panel-head">
+    <details className={`card panel ${styles.fold}`} aria-label="Tokenized funds for the bond side">
+      <summary className="panel-head">
         <h2>Tokenized funds for the steady side</h2>
         <span>Panther Terminal data{asOf ? ` · as of ${asOf.slice(0, 10)}` : ""}</span>
-      </div>
+      </summary>
       <div className="table-wrap">
         <table className="table">
           <thead>
@@ -702,6 +678,6 @@ function Funds({ funds, asOf, residence }: { funds: FundOption[]; asOf: string |
         its source, checked against your answers ({residence === "us" ? "United States" : "outside the US"}); “check terms” means the
         rule doesn&apos;t settle it for you.
       </p>
-    </section>
+    </details>
   );
 }
